@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Playlist Lab for Spotify",
+  title: "Playlist Lab",
   description: "Tools and features for Spotify playlists",
 };
 
