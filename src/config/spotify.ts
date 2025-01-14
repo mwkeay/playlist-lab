@@ -3,6 +3,10 @@ export interface SpotifyConfig {
     clientSecret: string
 }
 
+/**
+ * Checks for environment variables from `.env.local` and returns them as an object to be exported. Throws an error if any variables are missing.
+ * @returns {SpotifyConfig} Object containing local environment variables for Spotify.
+ */
 function validateSpotifyConfig(): SpotifyConfig {
     const { SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET } = process.env;
 
