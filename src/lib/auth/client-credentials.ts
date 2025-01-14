@@ -1,81 +1,82 @@
-import spotifyConfig from "@/config/spotify";
 import Logger from "@/lib/logger";
+import spotifyConfig from "@/config/spotify";
 
+// Response structure from Spotify API client credentials request
 interface ClientCredentialsTokenResponse {
     access_token: string
     token_type: "Bearer"
     expires_in: number // SHOULD always be 3600 (1 hour)
 }
 
+// Cached client credentials token object structure
 interface ClientCredentialsToken {
     accessToken: string
     expires: Date
 }
 
-// Top level object as basic token storage
-let clientCredentialsToken: ClientCredentialsToken | undefined = undefined;
+let clientCredentialsToken: ClientCredentialsToken | undefined // Simple client credentials access token caching 
 
-/** *!!! Missing JSDoc comments* */
-const fetchClientCredentialsToken = async (): Promise<ClientCredentialsToken | undefined> => {
+/**
+ * Fetches the current access token from Spotify's OAuth2 client credentials flow.
+ * @returns {Promise<ClientCredentialsToken>} Object containing current client credentials access token and expiry time.
+ */
+const fetchClientCredentialsToken = async (): Promise<ClientCredentialsToken> => {
 
-    try {
-        const startTime = Date.now();
+    const startTime = Date.now(); // Begin timing to factor in response time to the calculated expiry time
 
-        const res = await fetch("https://accounts.spotify.com/api/token", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: new URLSearchParams({
-                grant_type: "client_credentials",
-                client_id: spotifyConfig.clientId,
-                client_secret: spotifyConfig.clientSecret,
-            }),
-        });
+    // https://developer.spotify.com/documentation/web-api/tutorials/client-credentials-flow
+    const res = await fetch("https://accounts.spotify.com/api/token", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+            grant_type: "client_credentials",
+            client_id: spotifyConfig.clientId,
+            client_secret: spotifyConfig.clientSecret,
+        }),
+    });
 
-        const data: ClientCredentialsTokenResponse = await res.json();
-        if (!data.access_token) throw new Error("No access_token attribute in Spotify client credentials token response JSON.");
-        if (!data.expires_in) throw new Error("No expires_in attribute in Spotify client credentials token response JSON.");
-        if (data.expires_in != 3600) Logger.error("Unexpected expires_in length in Spotify client credentials token response JSON.");
+    // Validate access token response
+    const data: ClientCredentialsTokenResponse = await res.json();
+    if (!data.access_token) throw new Error("No access_token attribute in Spotify client credentials token response JSON.");
+    if (!data.expires_in) throw new Error("No expires_in attribute in Spotify client credentials token response JSON.");
+    if (data.expires_in != 3600) Logger.warn("Unexpected expires_in length in Spotify client credentials token response JSON.");
 
-        const token: ClientCredentialsToken = {
-            accessToken: data.access_token,
-            expires: new Date(startTime + (data.expires_in * 1000)),
-        };
+    // Format to be cached
+    const token: ClientCredentialsToken = {
+        accessToken: data.access_token,
+        expires: new Date(startTime + (data.expires_in * 1000)),
+    };
 
-        Logger.debug("Client credentials token updated.", {
-            accessToken: token.accessToken,
-            expires: token.expires.toString(),
-        });
+    Logger.info("Client credentials token updated.", {
+        accessToken: token.accessToken,
+        expires: token.expires.toString(),
+    });
 
-        clientCredentialsToken = token;
+    return token;
+}
 
-        return token;
-    }
-
-    catch (error) {
-        Logger.error("Failed to fetch client credentials token.", error);
-        return;
-    }
-};
-
-/** *!!! Missing JSDoc comments* */
-const getClientCredentialsToken = async (): Promise<ClientCredentialsToken | undefined> => {
-    
+/**
+ * Provides the current client credentials access token for public API requests to Spotify.
+ * @returns {Promise<string | undefined>} Current client credentials access token.
+ */
+export const getClientCredentialsToken = async (): Promise<string | undefined> => {
+    // Cached token exists and has not expired
     if (clientCredentialsToken?.accessToken && clientCredentialsToken.expires > new Date()) {
-        return clientCredentialsToken;
+        return clientCredentialsToken.accessToken;
     }
-    
+    // New token required
     else {
+        // Handle authorisation errors
         try {
             const token = await fetchClientCredentialsToken();
-            return token;
+            clientCredentialsToken = token; // Cache token
+            return token.accessToken
         }
         catch (error) {
-            Logger.error("Failed to fetch new client credentials token.", error);
+            Logger.error("Client credentials authorisation flow failed.", error);
             return;
         }
     }
-};
-
-export default getClientCredentialsToken;
+}
