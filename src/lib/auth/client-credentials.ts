@@ -1,19 +1,53 @@
 import Logger from "@/lib/logger";
 import spotifyConfig from "@/config/spotify";
 
-// Response structure from Spotify API client credentials request
+/**
+ * ===================
+ *     TOKEN TYPES
+ * ===================
+ */
+
+/** Response from Spotify API client credentials request. */
 interface ClientCredentialsTokenResponse {
-    access_token: string
-    token_type: "Bearer"
-    expires_in: number // SHOULD always be 3600 (1 hour)
+    access_token: string;
+    token_type: "Bearer";
+    expires_in: number; // SHOULD always be 3600 (1 hour)
 }
 
-// Cached client credentials token object structure
+/** Token object for cached client credentials. */
 interface ClientCredentialsToken {
-    accessToken: string
-    expires: Date
+    accessToken: string;
+    expires: Date;
 }
 
+/**
+ * ==========================
+ *     CUSTOM ERROR TYPES
+ * ==========================
+ */
+
+/** Error codes for Spotify client credentials authorisation. */
+type ClientCredentialsErrorCode = "AUTH_NETWORK_ERROR" | "AUTH_INVALID_RESPONSE" | "AUTH_UNEXPECTED_ERROR";
+
+/** Custom error class for Spotify client credentials authorisation. */
+class ClientCredentialsError extends Error {
+    code: ClientCredentialsErrorCode;
+    cause?: Error;
+    constructor(code: ClientCredentialsErrorCode, message: string, cause?: Error) {
+        super(message);
+        this.code = code;
+        this.cause = cause;
+        this.name = "SpotifyAuthError";
+    }
+}
+
+/**
+ * =================
+ *     FUNCTIONS
+ * =================
+ */
+
+/** Cached variable for active token. */
 let clientCredentialsToken: ClientCredentialsToken | undefined // Simple client credentials access token caching 
 
 /**
@@ -21,40 +55,51 @@ let clientCredentialsToken: ClientCredentialsToken | undefined // Simple client 
  * @returns {Promise<ClientCredentialsToken>} Object containing current client credentials access token and expiry time.
  */
 const fetchClientCredentialsToken = async (): Promise<ClientCredentialsToken> => {
+    try {
+        const startTime = Date.now(); // Begin timing to factor in response time to the calculated expiry time
 
-    const startTime = Date.now(); // Begin timing to factor in response time to the calculated expiry time
+        // https://developer.spotify.com/documentation/web-api/tutorials/client-credentials-flow
+        const res = await fetch("https://accounts.spotify.com/api/token", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+                grant_type: "client_credentials",
+                client_id: spotifyConfig.clientId,
+                client_secret: spotifyConfig.clientSecret,
+            }),
+        });
+        const data: ClientCredentialsTokenResponse = await res.json();
 
-    // https://developer.spotify.com/documentation/web-api/tutorials/client-credentials-flow
-    const res = await fetch("https://accounts.spotify.com/api/token", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-            grant_type: "client_credentials",
-            client_id: spotifyConfig.clientId,
-            client_secret: spotifyConfig.clientSecret,
-        }),
-    });
+        // Validate access token response
+        if (!data.access_token) throw new ClientCredentialsError("AUTH_INVALID_RESPONSE", "No access_token attribute in Spotify client credentials token response JSON.");
+        if (!data.expires_in) throw new ClientCredentialsError("AUTH_INVALID_RESPONSE", "No expires_in attribute in Spotify client credentials token response JSON.");
+        if (data.expires_in != 3600) Logger.warn("Unexpected expires_in length in Spotify client credentials token response JSON.");
 
-    // Validate access token response
-    const data: ClientCredentialsTokenResponse = await res.json();
-    if (!data.access_token) throw new Error("No access_token attribute in Spotify client credentials token response JSON.");
-    if (!data.expires_in) throw new Error("No expires_in attribute in Spotify client credentials token response JSON.");
-    if (data.expires_in != 3600) Logger.warn("Unexpected expires_in length in Spotify client credentials token response JSON.");
+        // Format to be cached
+        const token: ClientCredentialsToken = {
+            accessToken: data.access_token,
+            expires: new Date(startTime + (data.expires_in * 1000)),
+        };
 
-    // Format to be cached
-    const token: ClientCredentialsToken = {
-        accessToken: data.access_token,
-        expires: new Date(startTime + (data.expires_in * 1000)),
-    };
+        Logger.info("Client credentials token updated.", {
+            accessToken: token.accessToken,
+            expires: token.expires.toString(),
+        });
 
-    Logger.info("Client credentials token updated.", {
-        accessToken: token.accessToken,
-        expires: token.expires.toString(),
-    });
-
-    return token;
+        return token;
+    }
+    catch (error) {
+        if (!(error instanceof ClientCredentialsError)) {
+            throw new ClientCredentialsError(
+                "AUTH_NETWORK_ERROR",
+                "Failed to fetch client credentials token",
+                error instanceof Error ? error : undefined
+            );
+        }
+        throw error;
+    }
 }
 
 /**
@@ -68,15 +113,20 @@ export const getClientCredentialsToken = async (): Promise<string | undefined> =
     }
     // New token required
     else {
-        // Handle authorisation errors
         try {
             const token = await fetchClientCredentialsToken();
             clientCredentialsToken = token; // Cache token
             return token.accessToken
         }
         catch (error) {
-            Logger.error("Client credentials authorisation flow failed.", error);
-            return;
+            if (!(error instanceof ClientCredentialsError)) {
+                throw new ClientCredentialsError(
+                    "AUTH_UNEXPECTED_ERROR",
+                    "Unexpected error thrown",
+                    error instanceof Error ? error : undefined
+                );
+            }
+            throw error;
         }
     }
 }
