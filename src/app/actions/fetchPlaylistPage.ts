@@ -1,17 +1,33 @@
 "use server";
 
 import { getClientCredentialsToken } from "@/lib/auth/client-credentials";
-import Logger from "@/lib/logger";
 
 /** Missing JSDoc comments */
-const fetchPlaylistPage = async (playlistId: string): Promise<{ playlist: any, error?: { code: string, message: string } }> => {
+const fetchPlaylistPage = async (
+    playlistId: string,
+    params?: {
+        limit?: number,
+        offset?: number,
+        fields?: string,
+    }
+): Promise<{
+    playlistTracks?: any,
+    error?: {
+        code: string,
+        message: string,
+    }
+}> => {
     try {
+        // Authorisation
         const accessToken = await getClientCredentialsToken();
-        const baseUrl = "https://api.spotify.com/v1/playlists/";
-        const url = new URL(baseUrl + playlistId);
-        const fields = "tracks(next,items(track(name)))";
-        url.searchParams.append("fields", fields);
 
+        // Create request
+        const url = new URL(`https://api.spotify.com/v1/playlists/${ playlistId }/tracks`);
+        if (params?.limit) url.searchParams.append("limit", params.limit.toString());
+        if (params?.offset) url.searchParams.append("offset", params.offset.toString());
+        if (params?.fields) url.searchParams.append("fields", params.fields);
+
+        // Make request
         const response = await fetch(url.toString(), {
             method: "GET",
             headers: {
@@ -19,18 +35,14 @@ const fetchPlaylistPage = async (playlistId: string): Promise<{ playlist: any, e
             },
         });
 
-        if (!response.ok) {
-            throw new Error("Spotify GET /playlist/ failed with status: " + response.status);
-        }
-
-        const playlist = await response.json();
-        Logger.debug("Spotify GET /playlists/ 200");
-        return { playlist };
+        // Process response
+        if (!response.ok) throw new Error("Spotify GET /playlist/{id}/tracks failed with status: " + response.status);
+        const playlistTracks = await response.json();
+        return { playlistTracks };
     }
 
     catch (error) {
         return {
-            playlist: undefined,
             error: error instanceof Error
                 ? { code: error.name, message: error.message }
                 : { code: "UNEXPECTED_ERROR", message: "Invalid type thrown" },
