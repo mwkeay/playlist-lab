@@ -4,9 +4,23 @@ import { FC } from "react";
 import usePlaylist from "./usePlaylist";
 import PlaylistTable from "./PlaylistTable";
 
-const Playlist: FC<{ id: string }> = ({ id }) => {
+const Meta: FC<{ meta: any }> = ({ meta }) => (
+    <div className="flex p-4 gap-4">
+        <div className="w-32 h-32">
+            <img
+                src={ Array.isArray(meta?.images) ? meta.images[0].url : undefined }
+                className="w-full"
+            />
+        </div>
+        <div className="flex flex-col">
+            <h1>{ meta?.name }</h1>
+            <p>{ meta?.description }</p>
+        </div>
+    </div>
+);
 
-    const { items, isLoading, error } = usePlaylist(id);
+const Playlist: FC<{ id: string }> = ({ id }) => {
+    const { meta, items, isLoading, error } = usePlaylist(id);
 
     if (error) return (
         <>
@@ -16,6 +30,7 @@ const Playlist: FC<{ id: string }> = ({ id }) => {
 
     if (isLoading) return (
         <>
+            <Meta meta={ undefined } />
             <PlaylistTable items={ [] } />
             <p className="w-full text-center bg-white text-black">Loading...</p>
         </>
@@ -23,6 +38,7 @@ const Playlist: FC<{ id: string }> = ({ id }) => {
 
     return (
         <>
+            <Meta meta={meta} />
             <PlaylistTable items={ items } />
         </>
     );

@@ -1,3 +1,4 @@
+import fetchPlaylistMeta from "@/app/actions/fetchPlaylistMeta";
 import fetchPlaylistPage from "@/app/actions/fetchPlaylistPage";
 import { useEffect, useState } from "react";
 
@@ -15,6 +16,7 @@ class PlaylistError extends Error {
 }
 
 const usePlaylist = (playlistId: string) => {
+    const [meta, setMeta] = useState<any>();
     const [items, setItems] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<Error | null>(null);
@@ -26,7 +28,7 @@ const usePlaylist = (playlistId: string) => {
             // Fetch
             const { playlistTracks, error } = await fetchPlaylistPage(playlistId, {
                 offset: fetched,
-                fields: "total,items(track(name,artists(name,external_urls),album(name,external_urls),external_urls))",
+                fields: "total,items(track(name,artists(name),album(name)))",
             });
             const tracks = playlistTracks?.items;
             const total = playlistTracks?.total;
@@ -48,9 +50,14 @@ const usePlaylist = (playlistId: string) => {
             // Complete final recursion
             return tracks;
         }
+
+        // Fetch playlist meta
+        fetchPlaylistMeta(playlistId)
+        .then(meta => setMeta(meta.playlistMeta));
+
         // Call recursive function
         fetchPlaylistTracks()
-        .then((tracks) => {
+        .then(tracks => {
             setItems(tracks);
             setIsLoading(false);
         })
@@ -64,6 +71,7 @@ const usePlaylist = (playlistId: string) => {
     }, [playlistId]);
 
     return {
+        meta,
         items,
         isLoading,
         error,
