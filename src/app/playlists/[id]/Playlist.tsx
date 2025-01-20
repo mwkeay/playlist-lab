@@ -2,25 +2,29 @@
 
 import { FC } from "react";
 import usePlaylist from "./usePlaylist";
+import PlaylistTable from "./PlaylistTable";
 
 const Playlist: FC<{ id: string }> = ({ id }) => {
 
     const { items, isLoading, error } = usePlaylist(id);
 
     if (error) return (
-        <div>Error: {error.message}</div>
+        <>
+            <div>Error: {error.message}</div>
+        </>
     );
 
     if (isLoading) return (
-        <div>Loading...</div>
+        <>
+            <PlaylistTable items={ [] } />
+            <p className="w-full text-center bg-white text-black">Loading...</p>
+        </>
     );
 
     return (
-        <div>
-            {items.map((item, i) => (
-                <p key={i}>{i + 1}: {JSON.stringify(item)}</p>
-            ))}
-        </div>
+        <>
+            <PlaylistTable items={ items } />
+        </>
     );
 };
 
