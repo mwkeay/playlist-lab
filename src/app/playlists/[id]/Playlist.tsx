@@ -34,7 +34,7 @@ const Playlist: FC<{ id: string }> = ({ id }) => {
 
     if (error) return (
         <>
-            <div>Error: {error.message}</div>
+            <div className="flex h-screen justify-center items-center">Error: {error.message}</div>
         </>
     );
 

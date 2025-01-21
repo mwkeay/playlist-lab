@@ -8,6 +8,10 @@
     --background-end-rgb: 255, 255, 255;
 }
 
+.debug * {
+    box-shadow: 0 0 0 1px blue inset;
+}
+
 @media (prefers-color-scheme: dark) {
     :root {
        --foreground-rgb: 255, 255, 255;

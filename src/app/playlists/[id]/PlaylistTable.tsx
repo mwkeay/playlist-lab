@@ -1,8 +1,12 @@
 import formatArtistNames from "@/lib/formatArtistNames";
 import { Dispatch, FC, SetStateAction } from "react";
 import { SortKey, SortOptions } from "./usePlaylist";
+import formatMilliseconds from "@/lib/formatMilliseconds";
+import { Open_Sans } from "next/font/google";
 
 import "./loading-shimmer.css";
+
+const numberFont = Open_Sans({ subsets: ["latin"], weight: ["400", "700"] });
 
 const PlaylistTable: FC<{
     items: Record<number, any>,
@@ -30,14 +34,16 @@ const PlaylistTable: FC<{
                     <th className="flex-1">Title</th>
                     <th className="flex-1">Artist</th>
                     <th className="flex-1">Album</th>
+                    <th className="w-20 text-right pr-5">&#x1F552;</th>
                 </tr>
             </thead>
             <tbody>
-                <tr className="flex h-96 m-4 loading-shimmer">
+                <tr className="flex h-screen m-4 loading-shimmer">
                     <td className="w-12 h-full" />
                     <td className="flex-1 h-full" />
                     <td className="flex-1 h-full" />
                     <td className="flex-1 h-full" />
+                    <td className="w-20 h-full" />
                 </tr>
             </tbody>
         </table>
@@ -49,7 +55,7 @@ const PlaylistTable: FC<{
                 <tr className="flex">
                     <th
                         onClick={ () => headerSort("CUSTOM_ORDER") }
-                        className="w-12 text-center cursor-pointer hover:bg-white hover:text-black"
+                        className="w-12 cursor-pointer hover:bg-white hover:text-black"
                     >#</th>
                     <th
                         onClick={ () => headerSort("TITLE") }
@@ -63,6 +69,10 @@ const PlaylistTable: FC<{
                         onClick={ () => headerSort("ALBUM") }
                         className="flex-1 cursor-pointer hover:bg-white hover:text-black"
                     >Album</th>
+                    <th
+                        onClick={ () => headerSort("DURATION") }
+                        className="w-20 text-right pr-5 cursor-pointer hover:bg-white hover:text-black"
+                    >&#x1F552;</th>
                 </tr>
             </thead>
             <tbody>
@@ -85,6 +95,10 @@ const PlaylistTable: FC<{
 
                             <td className="flex-1 overflow-hidden">
                                 <p className="whitespace-nowrap truncate">{ item?.track?.album?.name ?? "-" }</p>
+                            </td>
+
+                            <td className="w-20 text-right pr-4 overflow-hidden">
+                                <p className={`whitespace-nowrap truncate ${numberFont.className}`}>{ item?.track?.duration_ms ? formatMilliseconds(item.track.duration_ms) : "-" }</p>
                             </td>
                         </tr>
                     );

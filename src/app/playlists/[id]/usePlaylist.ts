@@ -1,9 +1,10 @@
 import fetchPlaylist from "@/app/actions/fetchPlaylist";
 import fetchPlaylistTracks from "@/app/actions/fetchPlaylistTracks";
 import listToIndexedDictionary from "@/lib/listToIndexedDictionary";
+import Logger from "@/lib/logger";
 import { useEffect, useState } from "react";
 
-export type SortKey = "CUSTOM_ORDER" | "TITLE" | "ARTIST" | "ALBUM";
+export type SortKey = "CUSTOM_ORDER" | "TITLE" | "ARTIST" | "ALBUM" | "DURATION";
 
 export interface SortOptions {
     key: SortKey
@@ -45,6 +46,7 @@ const usePlaylist = (playlistId: string) => {
                 case "TITLE": return items[i]?.track?.name || "";
                 case "ARTIST": return items[i]?.track?.artists?.[0]?.name || "";
                 case "ALBUM": return items[i]?.track?.album?.name || "";
+                case "DURATION": return items[i]?.track?.duration_ms || "";
                 default: return "";
             }
         };
@@ -56,7 +58,17 @@ const usePlaylist = (playlistId: string) => {
             if (typeof a === "number" && typeof b === "number") {
                 return direction === "ASC" ? a - b : b - a;
             }
-            else throw new Error("Unexpected types in playlist bubble sort comparison");
+            else {
+                Logger.error("Unexpected types in playlist bubble sort comparison");
+                // Handle corrupted items by always sorting them to the end
+                if (typeof a !== "string" && typeof a !== "number") {
+                    return 1; // `a` is corrupted, so place it after `b`
+                }
+                if (typeof b !== "string" && typeof b !== "number") {
+                    return -1; // `b` is corrupted, so place it after `a`
+                }
+                return 0;
+            }
         };
 
         const indexes = Array.from({ length: Object.keys(items).length }, (_, index) => index);
@@ -73,7 +85,7 @@ const usePlaylist = (playlistId: string) => {
             // Fetch
             const { playlistTracks, error } = await fetchPlaylistTracks(playlistId, {
                 offset: fetched,
-                fields: "total,items(track(name,artists(name),album(name)))",
+                fields: "total,items(track(name,duration_ms,artists(name),album(name)))",
             });
             const itemsArray = playlistTracks?.items;
             const total = playlistTracks?.total;
@@ -98,7 +110,7 @@ const usePlaylist = (playlistId: string) => {
             try {
                 // Fetch
                 const { playlist, error } = await fetchPlaylist(playlistId, {
-                    fields: "tracks(total,items(track(name,artists(name),album(name)))),name,description,images"
+                    fields: "tracks(total,items(track(name,duration_ms,artists(name),album(name)))),name,description,images"
                 });
                 if (error) throw error;
                 const { tracks: { items: itemArray, total }, ...meta } = playlist;
