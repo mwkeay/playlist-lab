@@ -2,10 +2,13 @@
 
 import { getClientCredentialsToken } from "@/lib/auth/client-credentials";
 
-const fetchPlaylistMeta = async (
+const fetchPlaylist = async (
     playlistId: string,
+    params?: {
+        fields: string,
+    },
 ): Promise<{
-    playlistMeta?: any,
+    playlist?: any,
     error?: {
         code: string,
         message: string,
@@ -17,7 +20,7 @@ const fetchPlaylistMeta = async (
 
         // Create request
         const url = new URL("https://api.spotify.com/v1/playlists/" + playlistId);
-        url.searchParams.append("fields", "description,images,name");
+        if (params?.fields) url.searchParams.append("fields", params.fields);
 
         // Make request
         const response = await fetch(url.toString(), {
@@ -29,8 +32,8 @@ const fetchPlaylistMeta = async (
 
         // Process response
         if (!response.ok) throw new Error("Spotify GET /playlist/{id} failed with status: " + response.status);
-        const playlistMeta = await response.json();
-        return { playlistMeta };
+        const playlist = await response.json();
+        return { playlist };
     }
     catch (error) {
         return {
@@ -41,4 +44,4 @@ const fetchPlaylistMeta = async (
     }
 };
 
-export default fetchPlaylistMeta;
+export default fetchPlaylist;

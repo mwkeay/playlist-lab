@@ -2,8 +2,7 @@
 
 import { getClientCredentialsToken } from "@/lib/auth/client-credentials";
 
-/** Missing JSDoc comments */
-const fetchPlaylistPage = async (
+const fetchPlaylistTracks = async (
     playlistId: string,
     params?: {
         limit?: number,
@@ -49,4 +48,4 @@ const fetchPlaylistPage = async (
     }
 };
 
-export default fetchPlaylistPage;
+export default fetchPlaylistTracks;

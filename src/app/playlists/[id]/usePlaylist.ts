@@ -1,5 +1,5 @@
-import fetchPlaylistMeta from "@/app/actions/fetchPlaylistMeta";
-import fetchPlaylistPage from "@/app/actions/fetchPlaylistPage";
+import fetchPlaylist from "@/app/actions/fetchPlaylist";
+import fetchPlaylistTracks from "@/app/actions/fetchPlaylistTracks";
 import { useEffect, useState } from "react";
 
 type PlaylistErrorCode = "PLAYLIST_FETCH_FAILED" | "PLAYLIST_INVALID_RESPONSE" | "PLAYLIST_UNEXPECTED_ERROR";
@@ -22,52 +22,68 @@ const usePlaylist = (playlistId: string) => {
     const [error, setError] = useState<Error | null>(null);
 
     useEffect(() => {
-        // Define recursive function
-        const fetchPlaylistTracks = async (fetched: number = 0): Promise<any[]> => {
+        // Recursive function
+        const fetchRemainingItems = async (fetched: number): Promise<any[]> => {
 
             // Fetch
-            const { playlistTracks, error } = await fetchPlaylistPage(playlistId, {
+            const { playlistTracks, error } = await fetchPlaylistTracks(playlistId, {
                 offset: fetched,
                 fields: "total,items(track(name,artists(name),album(name)))",
             });
-            const tracks = playlistTracks?.items;
+            const items = playlistTracks?.items;
             const total = playlistTracks?.total;
 
             // Catch errors
             if (error) throw error;
-            if (!Array.isArray(tracks)) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'items' property is not an array");
-            if (tracks.length == 0) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "Received empty 'items' array");
-            if (!Number.isInteger(total)) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'total' property is not an integer");
-            if (fetched + tracks.length > total) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "Fetched more tracks than playlist total");
+            if (!items) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'items' property not found in playlist/{id}/tracks response");
+            if (!Array.isArray(items)) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'items' property is not an array in playlist/{id}/tracks response");
+            if (items.length == 0) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "Received empty 'items' array in playlist/{id}/tracks response");
+            if (!Number.isInteger(total)) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'total' property is not an integer in playlist/{id}/tracks response");
+            if (fetched + items.length > total) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "Fetched more tracks than playlist total in playlist/{id}/tracks response");
             
-            // Recurse
-            if (fetched + tracks.length < total) {
-                const remainingTracks = await fetchPlaylistTracks(fetched + tracks.length);
-                tracks.push(...remainingTracks);
-                return tracks;
+            // Fetch remaining items
+            if (fetched + items.length < total) {
+                const remainingItems = await fetchRemainingItems(fetched + items.length);
+                items.push(...remainingItems);
             }
-            
-            // Complete final recursion
-            return tracks;
-        }
+            return items;
+        };
+        // Async wrapper function
+        const fetchEntirePlaylist = async () => {
+            try {
+                // Fetch
+                const { playlist, error } = await fetchPlaylist(playlistId, {
+                    fields: "tracks(total,items(track(name,artists(name),album(name)))),name,description,images"
+                });
+                if (error) throw error;
+                const { tracks: { items, total }, ...meta } = playlist;
 
-        // Fetch playlist meta
-        fetchPlaylistMeta(playlistId)
-        .then(meta => setMeta(meta.playlistMeta));
+                // Validate response
+                if (!total) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'total' property not found in playlist response");
+                if (!Number.isInteger(total)) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'total' property is not an integer in playlist response");
+                if (!items) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'tracks.items' property not found in playlist response");
+                if (!Array.isArray(items)) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'tracks.items' property is not an array in playlist response");
 
-        // Call recursive function
-        fetchPlaylistTracks()
-        .then(tracks => {
-            setItems(tracks);
-            setIsLoading(false);
-        })
-        .catch((error) => {
-            setError(
-                error instanceof PlaylistError
-                    ? error
-                    : new PlaylistError("PLAYLIST_UNEXPECTED_ERROR", "Caught unexpected error", error)
-            );
-        });
+                // Fetch remaining items
+                if (items.length < total) {
+                    const remainingItems = await fetchRemainingItems(items.length);
+                    items.push(...remainingItems);
+                }
+                
+                // Set states
+                setMeta(meta);
+                setItems(items);
+                setIsLoading(false);
+            }
+            catch (error) {
+                setError(
+                    error instanceof PlaylistError
+                        ? error
+                        : new PlaylistError("PLAYLIST_UNEXPECTED_ERROR", "Caught unexpected error", error)
+                );
+            }
+        };
+        fetchEntirePlaylist()
     }, [playlistId]);
 
     return {
