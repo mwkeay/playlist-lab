@@ -10,10 +10,7 @@ const Meta: FC<{ meta: any }> = ({ meta }) => {
     if (!meta) return (
         <div className="flex p-4 gap-4">
             <div className="w-32 h-32 loading-shimmer" />
-            <div className="flex flex-col loading-shimmer">
-                <h1>Look away! I'm loading!</h1>
-                <p>It is so very rude to try and look at this content while it is still being fetched. Maybe you should fetch some manners.</p>
-            </div>
+            <div className="flex flex-col loading-shimmer w-full" />
         </div>
     );
     return (
@@ -33,7 +30,7 @@ const Meta: FC<{ meta: any }> = ({ meta }) => {
 };
 
 const Playlist: FC<{ id: string }> = ({ id }) => {
-    const { meta, items, isLoading, error } = usePlaylist(id);
+    const { meta, items, activeIndexes, setSortOptions, isLoading, error } = usePlaylist(id);
 
     if (error) return (
         <>
@@ -41,18 +38,10 @@ const Playlist: FC<{ id: string }> = ({ id }) => {
         </>
     );
 
-    if (isLoading) return (
-        <>
-            <Meta meta={ undefined } />
-            <PlaylistTable items={ [] } />
-            <p className="w-full text-center bg-white text-black">Loading...</p>
-        </>
-    );
-
     return (
         <>
-            <Meta meta={meta} />
-            <PlaylistTable items={ items } />
+            <Meta meta={ meta } />
+            <PlaylistTable items={ items } activeIndexes={ activeIndexes } ready={ !isLoading } setSortOptions={ setSortOptions } />
         </>
     );
 };
