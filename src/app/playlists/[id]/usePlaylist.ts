@@ -1,4 +1,4 @@
-import fetchPlaylist from "@/app/actions/fetchPlaylist";
+import fetchPlaylistMeta from "@/app/actions/fetchPlaylistMeta";
 import fetchPlaylistTracks from "@/app/actions/fetchPlaylistTracks";
 import listToIndexedDictionary from "@/lib/listToIndexedDictionary";
 import Logger from "@/lib/logger";
@@ -32,12 +32,9 @@ const usePlaylist = (playlistId: string) => {
     const [activeIndexes, setActiveIndexes] = useState<number[]>([]);
     const [sortOptions, setSortOptions] = useState<SortOptions>({ key: "CUSTOM_ORDER", direction: "ASC"});
     // Handling
-    const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<Error | null>(null);
 
-    useEffect(() => {
-        if (isLoading) return;
-        
+    useEffect(() => {        
         const { key, direction } = sortOptions;
 
         const getSortKey = (i: number): string | number => {
@@ -76,78 +73,44 @@ const usePlaylist = (playlistId: string) => {
             compare(getSortKey(a), getSortKey(b))
         );
         setActiveIndexes(sortedIndexes);
-    }, [items, sortOptions, isLoading]);
+    }, [items, sortOptions]);
 
+    /**
+     * Fetch playlist tracks
+     */
     useEffect(() => {
-        // Recursive function
-        const fetchRemainingItems = async (fetched: number): Promise<any[]> => {
-
-            // Fetch
-            const { playlistTracks, error } = await fetchPlaylistTracks(playlistId, {
-                offset: fetched,
-                fields: "total,items(track(name,duration_ms,artists(name),album(name)))",
-            });
-            const itemsArray = playlistTracks?.items;
-            const total = playlistTracks?.total;
-
-            // Catch errors
-            if (error) throw error;
-            if (!itemsArray) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'items' property not found in playlist/{id}/tracks response");
-            if (!Array.isArray(itemsArray)) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'items' property is not an array in playlist/{id}/tracks response");
-            if (itemsArray.length == 0) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "Received empty 'items' array in playlist/{id}/tracks response");
-            if (!Number.isInteger(total)) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'total' property is not an integer in playlist/{id}/tracks response");
-            if (fetched + itemsArray.length > total) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "Fetched more tracks than playlist total in playlist/{id}/tracks response");
+        const wrapper = async () => {
+            const { items: itemsArray, error } = await fetchPlaylistTracks(playlistId);
+            if (error) {
+                Logger.error(error.message, error);
+                setError(new Error(error.message, { cause: error.cause }));
+                return;
+            }
+            // Convert array to indexed dictionary and array of indexes
+            const items = listToIndexedDictionary(itemsArray);
+            const indexes = Array.from({ length: itemsArray.length }, (_, index) => index);
             
-            // Fetch remaining items
-            if (fetched + itemsArray.length < total) {
-                const remainingItems = await fetchRemainingItems(fetched + itemsArray.length);
-                itemsArray.push(...remainingItems);
-            }
-            return itemsArray;
+            // Set states
+            setItems(items);
+            setActiveIndexes(indexes);
         };
-        // Async wrapper function
-        const fetchEntirePlaylist = async () => {
-            try {
-                // Fetch
-                const { playlist, error } = await fetchPlaylist(playlistId, {
-                    fields: "tracks(total,items(track(name,duration_ms,artists(name),album(name)))),name,description,images"
-                });
-                if (error) throw error;
-                const { tracks: { items: itemArray, total }, ...meta } = playlist;
+        wrapper();
+    }, [playlistId]);
 
-                // Validate response
-                if (!total) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'total' property not found in playlist response");
-                if (!Number.isInteger(total)) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'total' property is not an integer in playlist response");
-                if (!itemArray) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'tracks.items' property not found in playlist response");
-                if (!Array.isArray(itemArray)) throw new PlaylistError("PLAYLIST_INVALID_RESPONSE", "'tracks.items' property is not an array in playlist response");
-
-                // Set meta
-                setMeta(meta);
-
-                // Fetch remaining items
-                if (itemArray.length < total) {
-                    const remainingItemsArray = await fetchRemainingItems(itemArray.length);
-                    itemArray.push(...remainingItemsArray);
-                }
-
-                // Convert array to indexed dictionary and array of indexes
-                const items = listToIndexedDictionary(itemArray);
-                const indexes = Array.from({ length: itemArray.length }, (_, index) => index);
-                
-                // Set states
-                setItems(items);
-                setActiveIndexes(indexes);
-                setIsLoading(false);
+    /**
+     * Fetch playlist meta
+     */
+    useEffect(() => {
+        const wrapper = async () => {
+            const { playlist: meta, error } = await fetchPlaylistMeta(playlistId);
+            if (error) {
+                Logger.error(error.message, error);
+                setError(new Error(error.message, { cause: error.cause }));
+                return;
             }
-            catch (error) {
-                setError(
-                    error instanceof PlaylistError
-                        ? error
-                        : new PlaylistError("PLAYLIST_UNEXPECTED_ERROR", "Caught unexpected error", error)
-                );
-            }
+            setMeta(meta);
         };
-        fetchEntirePlaylist()
+        wrapper();
     }, [playlistId]);
 
     return {
@@ -155,7 +118,6 @@ const usePlaylist = (playlistId: string) => {
         items,
         activeIndexes,
         setSortOptions,
-        isLoading,
         error,
     };
 };

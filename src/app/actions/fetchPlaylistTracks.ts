@@ -1,49 +1,64 @@
 "use server";
 
 import { getClientCredentialsToken } from "@/lib/auth/client-credentials";
+import formatServerActionError, { ServerActionError } from "@/lib/formatServerActionError";
+import Logger from "@/lib/logger";
+
+const REQUEST_FIELDS = "total,items(track(name,duration_ms,artists(name),album(name)))";
 
 const fetchPlaylistTracks = async (
     playlistId: string,
-    params?: {
-        limit?: number,
-        offset?: number,
-        fields?: string,
-    }
+    fields: string = REQUEST_FIELDS,
 ): Promise<{
-    playlistTracks?: any,
-    error?: {
-        code: string,
-        message: string,
-    }
+    items?: any,
+    error?: ServerActionError,
 }> => {
     try {
         // Authorisation
         const accessToken = await getClientCredentialsToken();
 
-        // Create request
-        const url = new URL(`https://api.spotify.com/v1/playlists/${ playlistId }/tracks`);
-        if (params?.limit) url.searchParams.append("limit", params.limit.toString());
-        if (params?.offset) url.searchParams.append("offset", params.offset.toString());
-        if (params?.fields) url.searchParams.append("fields", params.fields);
+        // Request function
+        const requestTracks = async (offset: number = 0) => {
+            const url = new URL(`https://api.spotify.com/v1/playlists/${ playlistId }/tracks`);
+            url.searchParams.append("fields", fields);
+            url.searchParams.append("offset", offset.toString());
+            url.searchParams.append("limit", "100")
 
-        // Make request
-        const response = await fetch(url.toString(), {
-            method: "GET",
-            headers: {
-                "Authorization": "Bearer " + accessToken,
-            },
-        });
+            const response = await fetch(url.toString(), {
+                method: "GET",
+                headers: {
+                    "Authorization": "Bearer " + accessToken,
+                },
+            });
 
-        // Process response
-        if (!response.ok) throw new Error("Spotify GET /playlist/{id}/tracks failed with status: " + response.status);
-        const playlistTracks = await response.json();
-        return { playlistTracks };
+            // Process response
+            if (!response.ok) throw new Error("Spotify GET /playlist/{id}/tracks failed with status " + response.status + ": " + response.statusText);
+            const tracks = await response.json();
+            return tracks;
+        };
+
+        // Fetch first page
+        const items = [];
+        const { items: pageItems, total } = await requestTracks();
+        if (!Array.isArray(pageItems)) throw new Error("Unexpected response: items is not an array");
+        if (typeof total !== "number") throw new Error("Unexpected response: total is not a number");
+        items.push(...pageItems);
+
+        // Fetch remaining pages
+        const remainingRequests = [];
+        for (let offset = items.length; offset < total; offset += 100) {
+            remainingRequests.push(requestTracks(offset));
+        };
+        const remainingPages = await Promise.all(remainingRequests);
+        remainingPages.forEach(({ items: pageItems }) => items.push(...pageItems));
+
+        // Return to client
+        return { items };
     }
     catch (error) {
+        Logger.error("Server action fetchAllPlaylistTracks failed", error); // Log error server-side
         return {
-            error: error instanceof Error
-                ? { code: error.name, message: error.message }
-                : { code: "UNEXPECTED_ERROR", message: "Invalid type thrown" },
+            error: formatServerActionError(error), // Format error for HTTP body
         };
     }
 };

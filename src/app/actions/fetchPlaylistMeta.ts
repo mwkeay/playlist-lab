@@ -1,18 +1,15 @@
 "use server";
 
 import { getClientCredentialsToken } from "@/lib/auth/client-credentials";
+import formatServerActionError, { ServerActionError } from "@/lib/formatServerActionError";
+import Logger from "@/lib/logger";
 
 const fetchPlaylist = async (
     playlistId: string,
-    params?: {
-        fields: string,
-    },
+    fields: string = "name,description,images",
 ): Promise<{
     playlist?: any,
-    error?: {
-        code: string,
-        message: string,
-    }
+    error?: ServerActionError,
 }> => {
     try {
         // Authorisation
@@ -20,7 +17,7 @@ const fetchPlaylist = async (
 
         // Create request
         const url = new URL("https://api.spotify.com/v1/playlists/" + playlistId);
-        if (params?.fields) url.searchParams.append("fields", params.fields);
+        url.searchParams.append("fields", fields);
 
         // Make request
         const response = await fetch(url.toString(), {
@@ -31,15 +28,14 @@ const fetchPlaylist = async (
         });
 
         // Process response
-        if (!response.ok) throw new Error("Spotify GET /playlist/{id} failed with status: " + response.status);
+        if (!response.ok) throw new Error("Spotify GET /playlist/{id}/tracks failed with status " + response.status + ": " + response.statusText);
         const playlist = await response.json();
         return { playlist };
     }
     catch (error) {
+        Logger.error("Server action fetchAllPlaylistTracks failed", error); // Log error server-side
         return {
-            error: error instanceof Error
-                ? { code: error.name, message: error.message }
-                : { code: "UNEXPECTED_ERROR", message: "Invalid type thrown" },
+            error: formatServerActionError(error), // Format error for HTTP body
         };
     }
 };

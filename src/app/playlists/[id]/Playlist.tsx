@@ -30,7 +30,7 @@ const Meta: FC<{ meta: any }> = ({ meta }) => {
 };
 
 const Playlist: FC<{ id: string }> = ({ id }) => {
-    const { meta, items, activeIndexes, setSortOptions, isLoading, error } = usePlaylist(id);
+    const { meta, items, activeIndexes, setSortOptions, error } = usePlaylist(id);
 
     if (error) return (
         <>
@@ -41,7 +41,7 @@ const Playlist: FC<{ id: string }> = ({ id }) => {
     return (
         <>
             <Meta meta={ meta } />
-            <PlaylistTable items={ items } activeIndexes={ activeIndexes } ready={ !isLoading } setSortOptions={ setSortOptions } />
+            <PlaylistTable items={ items } activeIndexes={ activeIndexes } ready={ activeIndexes.length == 0 ? false : true } setSortOptions={ setSortOptions } />
         </>
     );
 };
