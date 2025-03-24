@@ -1,10 +1,12 @@
 import formatArtistNames from "@/lib/formatArtistNames";
-import { Dispatch, FC, SetStateAction } from "react";
+import { Dispatch, FC, SetStateAction, useState } from "react";
 import { SortKey, SortOptions } from "./usePlaylist";
 import formatMilliseconds from "@/lib/formatMilliseconds";
 import { Open_Sans } from "next/font/google";
 
 import "./loading-shimmer.css";
+
+const PAGE_LENGTH = 50;
 
 const numberFont = Open_Sans({ subsets: ["latin"], weight: ["400", "700"] });
 
@@ -13,11 +15,13 @@ const PlaylistTable: FC<{
     activeIndexes: number[],
     setSortOptions: Dispatch<SetStateAction<SortOptions>>,
     ready?: boolean,
+    page: number,
 }> = ({
     items,
     activeIndexes,
     setSortOptions,
     ready = true,
+    page,
 }) => {
     const headerSort = (key: SortKey) => {
         setSortOptions(prev => {
@@ -76,7 +80,7 @@ const PlaylistTable: FC<{
                 </tr>
             </thead>
             <tbody>
-                { activeIndexes.map((itemIndex, i) => {
+                { activeIndexes.slice((page-1)*PAGE_LENGTH, page*PAGE_LENGTH).map((itemIndex, i) => {
                     const item = items[itemIndex];
                     return (
                         <tr key={i+1} className="hover:bg-white hover:text-black flex">
