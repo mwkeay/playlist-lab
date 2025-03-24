@@ -1,29 +1,34 @@
 "use client";
 
-import { FC } from "react";
+import { FC, useState } from "react";
 import usePlaylist from "./usePlaylist";
 import PlaylistTable from "./PlaylistTable";
 
 import "./loading-shimmer.css";
 
 const Meta: FC<{ meta: any }> = ({ meta }) => {
-    if (!meta) return (
-        <div className="flex p-4 gap-4">
-            <div className="w-32 h-32 loading-shimmer" />
-            <div className="flex flex-col loading-shimmer w-full" />
-        </div>
-    );
+    const [display, setDisplay] = useState<"LOADING" | "LOADED" | "ERROR">("LOADING");
+
     return (
         <div className="flex p-4 gap-4">
             <div className="w-32 h-32">
-                <img
-                    src={ Array.isArray(meta?.images) ? meta.images[0].url : undefined }
+
+                {/* Loading */}
+                {display === "LOADING" && <div className="loading-shimmer h-full" />}
+
+                {/* Error */}
+                {display === "ERROR" && <div className="loading-shimmer h-full" /> /* Need styling for error */}
+
+                {meta?.images[0]?.url && <img
+                    src={Array.isArray(meta?.images) ? meta.images[0].url : undefined}
                     className="w-full"
-                />
+                    onLoad={() => setDisplay("LOADED")}
+                    onError={() => setDisplay("ERROR")}
+                />}
             </div>
             <div className="flex flex-col">
                 <h1>{ meta?.name }</h1>
-                <p>{ meta?.description }</p>
+                <p>{ !meta ? "" : meta.description ? meta.description : <span className="text-gray-600 italic">No playlist description</span> }</p>
             </div>
         </div>
     );
