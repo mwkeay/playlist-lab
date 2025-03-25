@@ -16,13 +16,13 @@ const PageNavigator: FC<{ page: number, setPage: Dispatch<SetStateAction<number>
             <button
                 onClick={() => setPage(page => page - 1)}
                 disabled={page <= 1}
-                className="p-2 hover:bg-white hover:text-black disabled:hover:bg-transparent disabled:hover:text-inherit"
+                className="p-2 w-10 enabled:hover:bg-white enabled:hover:text-black disabled:text-gray-600"
             >&larr;</button>
             Page {page} of {max}
             <button
                 onClick={() => setPage(page => page + 1)}
                 disabled={page >= max}
-                className="p-2 hover:bg-white hover:text-black disabled:hover:bg-transparent disabled:hover:text-inherit"
+                className="p-2 w-10 enabled:hover:bg-white enabled:hover:text-black disabled:text-gray-600"
             >&rarr;</button>
         </div>
     );
