@@ -6,7 +6,7 @@ import Logger from "@/lib/logger";
 
 const fetchPlaylist = async (
     playlistId: string,
-    fields: string = "name,description,images",
+    fields: string,
 ): Promise<{
     playlist?: any,
     error?: ServerActionError,

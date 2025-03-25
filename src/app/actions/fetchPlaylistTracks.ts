@@ -4,11 +4,9 @@ import { getClientCredentialsToken } from "@/lib/auth/client-credentials";
 import formatServerActionError, { ServerActionError } from "@/lib/formatServerActionError";
 import Logger from "@/lib/logger";
 
-const REQUEST_FIELDS = "total,items(track(name,duration_ms,artists(name),album(name)))";
-
 const fetchPlaylistTracks = async (
     playlistId: string,
-    fields: string = REQUEST_FIELDS,
+    fields: string,
 ): Promise<{
     items?: any,
     error?: ServerActionError,

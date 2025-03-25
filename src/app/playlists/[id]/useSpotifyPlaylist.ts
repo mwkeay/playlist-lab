@@ -4,6 +4,9 @@ import listToIndexedDictionary from "@/lib/listToIndexedDictionary";
 import Logger from "@/lib/logger";
 import { useEffect, useState } from "react";
 
+const META_REQUEST_FIELDS = "name,description,images";
+const ITEMS_REQUEST_FIELDS = "total,items(track(name,duration_ms,artists(name),album(name)))";
+
 const useSpotifyPlaylist = (playlistId: string) => {
     const [meta, setMeta] = useState<any>();
     const [items, setItems] = useState<Record<number, any>>();
@@ -14,7 +17,7 @@ const useSpotifyPlaylist = (playlistId: string) => {
      */
     useEffect(() => {
         const wrapper = async () => {
-            const { items: itemsArray, error } = await fetchPlaylistTracks(playlistId);
+            const { items: itemsArray, error } = await fetchPlaylistTracks(playlistId, ITEMS_REQUEST_FIELDS);
             if (error) {
                 Logger.error(error.message, error);
                 setError(new Error(error.message, { cause: error.cause }));
@@ -31,7 +34,7 @@ const useSpotifyPlaylist = (playlistId: string) => {
      */
     useEffect(() => {
         const wrapper = async () => {
-            const { playlist: meta, error } = await fetchPlaylistMeta(playlistId);
+            const { playlist: meta, error } = await fetchPlaylistMeta(playlistId, META_REQUEST_FIELDS);
             if (error) {
                 Logger.error(error.message, error);
                 setError(new Error(error.message, { cause: error.cause }));
