@@ -10,10 +10,6 @@ export const PlaylistProvider: FC<{
     id,
 }) => {
 
-    // ==================
-    //     Initialise
-    // ==================
-
     // Fetch playlist data from Spotify
     const {items, meta, error: fetchError} = useSpotifyPlaylist(id);
 
@@ -28,10 +24,6 @@ export const PlaylistProvider: FC<{
             setProviderContext(context => ({ ...context, activeIndexes: indexes }));
         }
     }, [items]);
-
-    // ======================
-    //     Return Context
-    // ======================
 
     // Combine single context provider context and separated consumer context
     const consumerContext: PlaylistConsumerContext = {
