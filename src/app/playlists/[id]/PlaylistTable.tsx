@@ -38,21 +38,11 @@ const PlaylistTable: FC = () => {
             <table className="flex flex-col">
                 <thead>
                     <tr className="flex">
-                        <th
-                            className="w-12 cursor-pointer hover:bg-white hover:text-black"
-                        >#</th>
-                        <th
-                            className="flex-1 cursor-pointer hover:bg-white hover:text-black"
-                        >Title</th>
-                        <th
-                            className="flex-1 cursor-pointer hover:bg-white hover:text-black"
-                        >Artist</th>
-                        <th
-                            className="flex-1 cursor-pointer hover:bg-white hover:text-black"
-                        >Album</th>
-                        <th
-                            className="w-20 text-right pr-5 cursor-pointer hover:bg-white hover:text-black"
-                        >&#x1F552;</th>
+                        <th className="w-12">#</th>
+                        <th className="flex-1">Title</th>
+                        <th className="flex-1">Artist</th>
+                        <th className="flex-1">Album</th>
+                        <th className="w-20 text-right pr-5">&#x1F552;</th>
                     </tr>
                 </thead>
                 <tbody>
