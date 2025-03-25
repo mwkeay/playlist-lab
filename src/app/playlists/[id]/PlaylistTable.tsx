@@ -1,9 +1,8 @@
+import "./loading-shimmer.css";
 import formatArtistNames from "@/lib/formatArtistNames";
 import { Dispatch, FC, SetStateAction, useEffect, useState } from "react";
 import formatMilliseconds from "@/lib/formatMilliseconds";
 import { Open_Sans } from "next/font/google";
-
-import "./loading-shimmer.css";
 import { usePlaylistContext } from "./PlaylistProvider/context";
 import Logger from "@/lib/logger";
 
@@ -27,7 +26,7 @@ const PageNavigator: FC<{ page: number, setPage: Dispatch<SetStateAction<number>
             >&rarr;</button>
         </div>
     );
-}
+};
 
 const PlaylistTable: FC = () => {
 
