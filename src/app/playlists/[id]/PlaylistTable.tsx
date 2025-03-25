@@ -1,6 +1,6 @@
 import "./loading-shimmer.css";
 import formatArtistNames from "@/lib/formatArtistNames";
-import { Dispatch, FC, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, FC, SetStateAction, useState } from "react";
 import formatMilliseconds from "@/lib/formatMilliseconds";
 import { Open_Sans } from "next/font/google";
 import { usePlaylistContext } from "./PlaylistProvider/context";
@@ -32,8 +32,6 @@ const PlaylistTable: FC = () => {
 
     const { items, activeIndexes } = usePlaylistContext();
     const [page, setPage] = useState(1);
-
-    useEffect(() => Logger.debug(`activeIndexes.length = ${activeIndexes?.length ?? "undefined"}`))
 
     return (
         <>
