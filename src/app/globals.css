@@ -12,6 +12,16 @@
     box-shadow: 0 0 0 1px blue inset;
 }
 
+.error-bg {
+    background: repeating-linear-gradient(
+        45deg, 
+        yellow 0px, 
+        yellow 5px, 
+        black 5px, 
+        black 10px
+    );
+}  
+
 @media (prefers-color-scheme: dark) {
     :root {
        --foreground-rgb: 255, 255, 255;
