@@ -4,7 +4,7 @@ import listToIndexedDictionary from "@/lib/listToIndexedDictionary";
 import Logger from "@/lib/logger";
 import { useEffect, useState } from "react";
 
-const usePlaylist = (playlistId: string) => {
+const useSpotifyPlaylist = (playlistId: string) => {
     const [meta, setMeta] = useState<any>();
     const [items, setItems] = useState<Record<number, any>>();
     const [error, setError] = useState<Error | null>(null);
@@ -49,4 +49,4 @@ const usePlaylist = (playlistId: string) => {
     };
 };
 
-export default usePlaylist;
+export default useSpotifyPlaylist;

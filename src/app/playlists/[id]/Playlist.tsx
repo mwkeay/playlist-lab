@@ -1,7 +1,6 @@
 "use client";
 
 import { FC, useState } from "react";
-import usePlaylist from "./usePlaylist";
 import PlaylistTable from "./PlaylistTable";
 
 import "./loading-shimmer.css";

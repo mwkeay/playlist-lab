@@ -1,7 +1,6 @@
 import { FC, ReactNode, useEffect, useState } from "react";
-import usePlaylist from "../usePlaylist";
+import useSpotifyPlaylist from "../useSpotifyPlaylist";
 import { PlaylistConsumerContext, PlaylistContext, PlaylistProviderContext, initContext } from "./context";
-import Logger from "@/lib/logger";
 
 export const PlaylistProvider: FC<{
     children: ReactNode,
@@ -16,7 +15,7 @@ export const PlaylistProvider: FC<{
     // ==================
 
     // Fetch playlist data from Spotify
-    const {items, meta, error: fetchError} = usePlaylist(id);
+    const {items, meta, error: fetchError} = useSpotifyPlaylist(id);
 
     // Create context object state
     const [providerContext, setProviderContext] = useState<PlaylistProviderContext>(initContext);
