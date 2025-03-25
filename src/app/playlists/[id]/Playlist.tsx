@@ -5,10 +5,14 @@ import usePlaylist from "./usePlaylist";
 import PlaylistTable from "./PlaylistTable";
 
 import "./loading-shimmer.css";
+import { PlaylistProvider } from "./PlaylistProvider";
+import { usePlaylistContext } from "./PlaylistProvider/context";
 
 const PAGE_LENGTH = 50;
 
-const Meta: FC<{ meta: any }> = ({ meta }) => {
+const Meta: FC = () => {
+
+    const { meta } = usePlaylistContext();
     const [display, setDisplay] = useState<"LOADING" | "LOADED" | "ERROR">("LOADING");
 
     return (
@@ -37,31 +41,11 @@ const Meta: FC<{ meta: any }> = ({ meta }) => {
 };
 
 const Playlist: FC<{ id: string }> = ({ id }) => {
-    const { meta, items, activeIndexes, setSortOptions, error } = usePlaylist(id);
-    const [page, setPage] = useState(1);
-
-    if (error) return (
-        <>
-            <div className="flex h-screen justify-center items-center">Error: {error.message}</div>
-        </>
-    );
-
     return (
-        <>
-            <Meta meta={meta} />
-            <PlaylistTable
-                items={items}
-                activeIndexes={activeIndexes}
-                page={page}
-                ready={activeIndexes.length == 0 ? false : true}
-                setSortOptions={setSortOptions}
-            />
-            <div className="w-full flex justify-center gap-4">
-                <button onClick={() => setPage(page => page - 1)} disabled={page <= 1}>&larr;</button>
-                Page {page} of {Math.ceil(activeIndexes.length / PAGE_LENGTH)}
-                <button onClick={() => setPage(page => page + 1)} disabled={page*PAGE_LENGTH >= activeIndexes.length}>&rarr;</button>
-            </div>
-        </>
+        <PlaylistProvider id={id}>
+            <Meta />
+            <PlaylistTable />
+        </PlaylistProvider>
     );
 };
 
