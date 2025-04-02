@@ -9,7 +9,7 @@ const PAGE_LENGTH = 100;
 const DEFAULT_COLUMNS: ColumnType[] = ["CUSTOM_ORDER", "NAME", "ARTISTS", "ALBUM", "DURATION"];
 
 // Types
-type ColumnType = "CUSTOM_ORDER" | "NAME" | "ARTISTS" | "ALBUM" | "DURATION";
+export type ColumnType = "CUSTOM_ORDER" | "NAME" | "ARTISTS" | "ALBUM" | "DURATION";
 
 // Fonts
 const numberFont = Open_Sans({ subsets: ["latin"], weight: ["400", "700"] });
