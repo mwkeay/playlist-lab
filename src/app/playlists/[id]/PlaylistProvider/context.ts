@@ -1,5 +1,8 @@
 import { createContext, useContext } from "react";
 
+// Column type
+export type ColumnType = "custom_order" | "name" | "artists" | "album" | "duration";
+
 // Context object for the Provider
 export interface PlaylistProviderContext {
     activeIndexes?: number[]

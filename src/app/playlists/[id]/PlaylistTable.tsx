@@ -2,62 +2,59 @@ import "./loading-shimmer.css";
 import { Dispatch, FC, ReactNode, SetStateAction, useState } from "react";
 import formatMilliseconds from "@/lib/formatMilliseconds";
 import { Open_Sans } from "next/font/google";
-import { usePlaylistContext } from "./PlaylistProvider/context";
+import { ColumnType, usePlaylistContext } from "./PlaylistProvider/context";
 
 // Constants
 const PAGE_LENGTH = 100;
-const DEFAULT_COLUMNS: ColumnType[] = ["CUSTOM_ORDER", "NAME", "ARTISTS", "ALBUM", "DURATION"];
-
-// Types
-export type ColumnType = "CUSTOM_ORDER" | "NAME" | "ARTISTS" | "ALBUM" | "DURATION";
+const DEFAULT_COLUMNS: ColumnType[] = ["custom_order", "name", "artists", "album", "duration"];
 
 // Fonts
 const numberFont = Open_Sans({ subsets: ["latin"], weight: ["400", "700"] });
 
 // Table Mapping
 const columnHeaderMappings: Record<ColumnType, { label: ReactNode; className: string }> = {
-    "CUSTOM_ORDER": {
+    "custom_order": {
         className: "w-12 text-center",
         label: "#"
     },
-    "NAME": {
+    "name": {
         className: "flex-1",
         label: "Title"
     },
-    "ARTISTS": {
+    "artists": {
         className: "flex-1",
         label: "Artists"
     },
-    "ALBUM": {
+    "album": {
         className: "flex-1",
         label: "Album"
     },
-    "DURATION": {
+    "duration": {
         className: "w-20 text-right pr-5",
         label: <>&#x1F552;</>
     },
 };
 const columnDataMappings: Record<ColumnType, { className: string, render: (item: any, index?: number) => ReactNode }> = {
-    "CUSTOM_ORDER": {
+    "custom_order": {
         className: "w-12 text-center overflow-hidden",
         render: (_, index) => index != null ? index + 1 : undefined,
     },
-    "NAME": {
+    "name": {
         className: "flex-1 overflow-hidden",
         render: (item) => item?.track?.name ?? undefined,
     },
-    "ARTISTS": {
+    "artists": {
         className: "flex-1 overflow-hidden",
         render: (item) =>
             item?.track?.artists?.length
                 ? item.track.artists.map((artist: any) => artist.name).join(", ")
                 : undefined,
     },
-    "ALBUM": {
+    "album": {
         className: "flex-1 overflow-hidden",
         render: (item) => item?.track?.album?.name ?? undefined,
     },
-    "DURATION": {
+    "duration": {
         className: `w-20 text-right pr-4 overflow-hidden ${numberFont.className}`,
         render: (item) => item?.track?.duration_ms ? formatMilliseconds(item.track.duration_ms) : undefined,
     },
