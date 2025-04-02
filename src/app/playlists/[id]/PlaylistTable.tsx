@@ -63,7 +63,6 @@ const columnDataMappings: Record<ColumnType, { className: string, render: (item:
     },
 };
 
-
 /** Table display for a playlists active indexes */
 const PlaylistTable: FC = () => {
 
