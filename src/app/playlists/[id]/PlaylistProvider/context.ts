@@ -1,4 +1,5 @@
 import { createContext, useContext } from "react";
+import { SortingRules } from "./sorting";
 
 // Column type
 export type ColumnType = "custom_order" | "name" | "artists" | "album" | "duration";
@@ -7,6 +8,7 @@ export type ColumnType = "custom_order" | "name" | "artists" | "album" | "durati
 export interface PlaylistProviderContext {
     activeIndexes?: number[]
     error: Error | null
+    sortingRules: SortingRules
 }
 
 // Context object for the Consumer
@@ -19,6 +21,9 @@ export interface PlaylistConsumerContext extends PlaylistProviderContext {
 export const initContext: PlaylistProviderContext = {
     activeIndexes: undefined,
     error: null,
+    sortingRules: [
+        { field: "custom_order", direction: "asc" },
+    ],
 };
 
 // Create context
