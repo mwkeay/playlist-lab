@@ -2,7 +2,7 @@
 
 import "./loading-shimmer.css";
 
-import { FC, ReactNode, useEffect, useState } from "react";
+import { Dispatch, FC, ReactNode, SetStateAction, useEffect, useState } from "react";
 import useSpotifyPlaylist from "./useSpotifyPlaylist";
 import { Open_Sans } from "next/font/google";
 import formatMilliseconds from "@/lib/formatMilliseconds";
@@ -70,7 +70,13 @@ const Playlist: FC<{ id: string }> = ({ id }) => {
     const { meta, items, error } = useSpotifyPlaylist(id);
 
     const [order, setOrder] = useState<number[]>([]);
-    const [activeColumns, setActiveColumns] = useState<ColumnType[]>(DEFAULT_COLUMNS);
+    const [activeColumns, setActiveColumns] = useState<Record<ColumnType, boolean>>({
+        custom_order: true,
+        name: true,
+        artists: true,
+        album: true,
+        duration: true,
+    });
     const [page, setPage] = useState(1);
 
     useEffect(() => {
@@ -79,7 +85,10 @@ const Playlist: FC<{ id: string }> = ({ id }) => {
 
     return (
         <>
-            <Meta meta={meta} />
+            <div className="flex justify-between p-4 gap-4">
+                <Meta meta={meta} />
+                <ColumnSelect activeColumns={activeColumns} setActiveColumns={setActiveColumns} />
+            </div>
             <Table items={items} order={order} activeColumns={activeColumns} page={page} />
         </>
     );
@@ -90,7 +99,7 @@ const Meta: FC<{ meta: any }> = ({ meta }) => {
     const [display, setDisplay] = useState<"LOADING" | "LOADED" | "ERROR">("LOADING");
 
     return (
-        <div className="flex p-4 gap-4">
+        <div className="flex gap-4">
             <div className={`w-32 h-32 ${!meta ? "loading-shimmer" : ""}`}>
 
                 {/* Loading */}
@@ -114,10 +123,38 @@ const Meta: FC<{ meta: any }> = ({ meta }) => {
     );
 };
 
+const ColumnSelect: FC<{
+    activeColumns: Record<ColumnType, boolean>,
+    setActiveColumns: Dispatch<SetStateAction<Record<ColumnType, boolean>>>,
+}> = ({ activeColumns, setActiveColumns }) => {
+
+    const toggleColumn = (column: ColumnType) => {
+        setActiveColumns((prev) => ({
+            ...prev,
+            [column]: !prev[column],
+        }));
+    };
+
+    return (
+        <div className="flex flex-col justify-center">
+            {(Object.keys(activeColumns) as ColumnType[]).map((column) => (
+                <label key={column} className="flex items-center space-x-2">
+                    <input
+                        type="checkbox"
+                        checked={activeColumns[column]}
+                        onChange={() => toggleColumn(column)}
+                    />
+                    <span>{column}</span>
+                </label>
+            ))}
+        </div>
+    );
+};
+
 const Table: FC<{
     items: Record<number, any> | undefined,
     order: number[],
-    activeColumns: ColumnType[],
+    activeColumns: Record<ColumnType, boolean>,
     page: number,
 }> = ({
     items,
@@ -128,19 +165,21 @@ const Table: FC<{
     return (
         <table className="flex flex-col">
             <thead>
-                <tr className="flex">
-                    {activeColumns.map((columnType, i) => {
+                <tr className="flex justify-between">{
+                    (Object.keys(activeColumns) as ColumnType[]).map((columnType, i) => {
+                        if (!activeColumns[columnType]) return;
                         const { label, className } = columnHeaderMappings[columnType];
                         return <th key={i+1} className={className}>{label}</th>;
-                    })}
-                </tr>
+                    })
+                }</tr>
             </thead>
-            <tbody className={items ? "" : "loading-shimmer h-screen m-4"}>
-                { order?.slice((page-1)*PAGE_LENGTH, page*PAGE_LENGTH).map((itemIndex, i) => {
+            <tbody className={items ? "" : "loading-shimmer h-screen m-4"}>{
+                order?.slice((page-1)*PAGE_LENGTH, page*PAGE_LENGTH).map((itemIndex, i) => {
                     const item = items?.[itemIndex];
                     return (
-                        <tr key={i+1} className="hover:bg-white hover:text-black flex">
-                            {activeColumns.map((columnType, i) => {
+                        <tr key={i+1} className="hover:bg-white hover:text-black flex justify-between">
+                            {(Object.keys(activeColumns) as ColumnType[]).map((columnType, i) => {
+                                if (!activeColumns[columnType]) return;
                                 const { className, render } = columnDataMappings[columnType];
                                 return <td key={i+1} className={className}>
                                     <p className="whitespace-nowrap truncate">{render(item, itemIndex)}</p>
@@ -148,8 +187,8 @@ const Table: FC<{
                             })}
                         </tr>
                     );
-                }) }
-            </tbody>
+                })
+            }</tbody>
         </table>
     );
 };
